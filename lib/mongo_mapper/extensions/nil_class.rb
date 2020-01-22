@@ -2,8 +2,16 @@
 module MongoMapper
   module Extensions
     module NilClass
-      def to_mongo(value)
+      def serialize(value)
         value
+      end
+
+      def cast(value)
+        value
+      end
+
+      def to_mongo
+        nil
       end
 
       def from_mongo(value)

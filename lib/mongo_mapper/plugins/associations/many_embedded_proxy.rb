@@ -5,7 +5,7 @@ module MongoMapper
       class ManyEmbeddedProxy < EmbeddedCollection
         def replace(values)
           @_values = (values || []).compact.map do |v|
-            v.respond_to?(:attributes) ? v.attributes : v
+            v.is_a?(klass) ? v.to_mongo : klass.load(v, true).to_mongo
           end
           reset
         end

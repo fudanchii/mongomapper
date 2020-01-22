@@ -2,3 +2,4 @@ eval File.read(File.expand_path('../gemfiles/Gemfile.common.rb', __FILE__)), nil
 gemspec
 
 gem 'rails', '~> 6.0', :group => :test
+gem 'byebug'

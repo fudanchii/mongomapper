@@ -23,6 +23,7 @@ module MongoMapper
     include Plugins::Validations
     include Plugins::EmbeddedCallbacks
     include Plugins::Touch
+    include Plugins::DocAsType
 
     included do
       extend Plugins

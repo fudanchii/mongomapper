@@ -29,6 +29,10 @@ module MongoMapper
           end
         end
 
+        def respond_to?(method)
+          DynamicFinder.new(method).found? || super
+        end
+
       private
 
         def method_missing(method, *args, &block)

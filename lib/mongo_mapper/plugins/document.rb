@@ -21,7 +21,7 @@ module MongoMapper
       def reload
         if doc = collection.find({:_id => id},{limit: -1}).first
           self.class.associations.each_value do |association|
-            get_proxy(association).reset
+            get_proxy(association).reload
           end
           instance_variables.each { |ivar| remove_instance_variable(ivar) }
           initialize_from_database(doc)

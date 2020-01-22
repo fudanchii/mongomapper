@@ -35,6 +35,7 @@ module AssociationsSpec
       user = AwesomeUser.create
       tag1 = AwesomeTag.new(:name => 'awesome')
       tag2 = AwesomeTag.new(:name => 'grand')
+
       post1 = AwesomePost.create(:creator => user, :tags => [tag1])
       post2 = AwesomePost.create(:creator => user, :tags => [tag2])
 

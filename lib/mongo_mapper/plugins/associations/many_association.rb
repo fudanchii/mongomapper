@@ -32,7 +32,13 @@ module MongoMapper
             end
 
             def #{name}=(value)
-              get_proxy(associations[#{name.inspect}]).replace(value)
+              associations[#{name.inspect}].tap do |assoc|
+                value = value.compact.map do |val|
+                  val[assoc.foreign_key] = self[:_id]
+                  val
+                end
+                get_proxy(assoc).replace(value)
+              end
               value
             end
           end_eval

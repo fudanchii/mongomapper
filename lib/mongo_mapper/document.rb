@@ -39,6 +39,7 @@ module MongoMapper
     include Plugins::PartialUpdates
     include Plugins::IdentityMap
     include Plugins::CounterCache
+    include Plugins::DocAsType
 
     included do
       extend Plugins

@@ -4,6 +4,14 @@ require 'active_support/core_ext/time/zones'
 module MongoMapper
   module Extensions
     module Time
+      def serialize(value)
+        to_mongo(value)
+      end
+
+      def cast(value)
+        to_mongo(value)
+      end
+
       def to_mongo(value)
         if !value || '' == value
           nil
@@ -27,4 +35,8 @@ end
 
 class Time
   extend MongoMapper::Extensions::Time
+end
+
+class ActiveModel::Type::Time
+  include MongoMapper::Extensions::Time
 end

@@ -32,12 +32,12 @@ module MongoMapper
           end
         end
 
-        def load_from_database(attrs, with_cast = false)
+        def load_from_database(attrs, _with_cast)
           return super if !self.class.static_keys || !attrs.respond_to?(:each)
 
           attrs = attrs.select { |key, _| self.class.key?(key) }
 
-          super(attrs, with_cast)
+          super
         end
       end
     end

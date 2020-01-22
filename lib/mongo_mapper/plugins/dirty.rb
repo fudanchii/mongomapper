@@ -42,12 +42,21 @@ module MongoMapper
 
     private
 
+      def attribute_will_change!(key)
+        @attributes[key.to_s] = ::ActiveModel::Attribute.from_user(
+          key.to_s,
+          read_key(key).dup,
+          @attributes[key.to_s].type,
+          @attributes[key.to_s]
+        )
+        super
+      end
+
       def write_key(key, value)
         key = unalias_key(key)
         if !keys.key?(key)
           super
         else
-          attribute_will_change!(key) if attribute_should_change?(key, value)
           super.tap do
             delete_changed_attributes(key) unless attribute_value_changed?(key)
           end
@@ -55,7 +64,10 @@ module MongoMapper
       end
 
       def delete_changed_attributes(key)
-        clear_attribute_changes([key])
+        # skip dynamic attr cleanup
+        if @attributes && @attributes[key].class != ::ActiveModel::Attribute.null(key).class
+          clear_attribute_changes([key])
+        end
         changed_attributes.delete(key)
       end
 

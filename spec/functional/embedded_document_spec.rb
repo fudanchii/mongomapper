@@ -299,6 +299,8 @@ describe "EmbeddedDocument" do
   context "Issue #536" do
     it "should update attributes with string keys" do
       person = @klass.create(:pets => [@pet_klass.new(:name => 'Rasmus', :flag => true)])
+      person.pets.first.name.should == "Rasmus"
+      person.pets.first.flag.should be_truthy
       person.update_attributes!({"pets" => ["name" => "sparky", "flag" => "false"]})
       person.reload
       person.pets.first.name.should == "sparky"

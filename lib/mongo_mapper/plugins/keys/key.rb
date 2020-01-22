@@ -9,7 +9,8 @@ module MongoMapper
 
         def initialize(*args)
           options_from_args = args.extract_options!
-          @name, @type = args.shift.to_s, args.shift
+          @name = args.shift.to_s
+          @type = resolve_type(args.shift, options_from_args)
           self.options = (options_from_args || {}).symbolize_keys
           @dynamic     = !!options[:__dynamic]
           @embeddable  = type.respond_to?(:embeddable?) ? type.embeddable? : false
@@ -117,6 +118,14 @@ module MongoMapper
         end
 
       private
+
+        def resolve_type(type, **options)
+          type = if type.is_a?(Symbol)
+                   ::ActiveModel::Type.lookup(type, **options.except(:default, :__dynamic))
+                 else
+                   type
+                 end
+        end
 
         def typecast_class
           @typecast_class ||= options[:typecast].constantize

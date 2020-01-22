@@ -27,7 +27,7 @@ describe "Dynamic Querying" do
   end
 
   it "should define a method for each key" do
-    @document.methods(false).select { |e| e =~ /^find_by_/ }.size == @document.keys.size
+    @document.keys.keys.map { |key| @document.respond_to?("find_by_#{key}") }.uniq.should == [true]
   end
 
   it "should find document based on all arguments" do

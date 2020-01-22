@@ -6,22 +6,26 @@ module MongoMapper
   module Plugins
     module Keys
       extend ActiveSupport::Concern
+      include ::ActiveModel::Attributes
 
       IS_RUBY_1_9 = method(:const_defined?).arity == 1
 
       included do
         extend ActiveSupport::DescendantsTracker
+
         key :_id, ObjectId, :default => lambda { BSON::ObjectId.new }
       end
 
       module ClassMethods
+        include ::ActiveModel::Attributes::ClassMethods
+
         def inherited(descendant)
           descendant.instance_variable_set(:@keys, keys.dup)
           super
         end
 
         def keys
-          @keys ||= {}
+          _default_attributes
         end
 
         def dynamic_keys
@@ -39,55 +43,28 @@ module MongoMapper
         def dealias_keys(hash)
           out = {}
           hash.each do |k, v|
-            key = keys[k.to_s]
-            name = key && key.abbr || k
+            name = dealias_key(k)
             out[name] = k.to_s.match(/^\$/) && v.is_a?(Hash) ? dealias_keys(v) : v
           end
           out
         end
 
-        def dealias_key(name)
-          key = keys[name.to_s]
-          key && key.abbr || k
-        end
-
         alias_method :dealias, :dealias_keys
         alias_method :unalias, :dealias_keys
 
-        def key(*args)
-          Key.new(*args).tap do |key|
-            keys[key.name] = key
-            keys[key.abbr] = key if key.abbr
-            create_accessors_for(key) if key.valid_ruby_name? && !key.reserved_name?
-            create_key_in_descendants(*args)
-            create_indexes_for(key)
-            create_validations_for(key)
-            @dynamic_keys = @defined_keys = @unaliased_keys = @object_id_keys = nil
-          end
+        def dealias_key(name)
+          return name if @__opts.nil? || @__opts[name].nil?
+          @__opts[name][:abbr] || @__opts[name][:alias] || @__opts[name][:field_name] || name
         end
 
-        def remove_key(name)
-          if key = keys[name.to_s]
-            keys.delete key.name
-            keys.delete key.abbr
-            remove_method key.name if respond_to? "#{key.name}"
-            remove_method "#{key.name}=" if respond_to? "#{key.name}="
-            remove_method "#{key.name}?" if respond_to? "#{key.name}?"
-            remove_method "#{key.name}_before_type_cast" if respond_to? "#{key.name}_before_type_cast"
-            remove_key_in_descendants key.name
-            remove_validations_for key.name
-            @dynamic_keys = @defined_keys = @unaliased_keys = @object_id_keys = nil
-          end
+        def key(name, type = String, **opts)
+          name = name.to_s
+          type = type_from_symbol(type)
+          @__opts ||= {}
+          @__opts[name] = opts.dup
+          create_validations_for(name, type)
+          define_default_attribute(name, opts.fetch(:default, nil), type)
         end
-
-        def persisted_name(name)
-          if key = keys[name.to_s]
-            key.persisted_name
-          else
-            name
-          end
-        end
-        alias_method :abbr, :persisted_name
 
         def key?(key)
           keys.key? key.to_s
@@ -98,7 +75,7 @@ module MongoMapper
         end
 
         def object_id_keys
-          @object_id_keys ||= unaliased_keys.keys.select { |key| keys[key].type == ObjectId }.map(&:to_sym)
+          @object_id_keys ||= _default_attributes.keys.select { |key| _default_attributes[key].type == ObjectId }.map(&:to_sym)
         end
 
         def object_id_key?(name)
@@ -125,62 +102,18 @@ module MongoMapper
 
       private
 
-        def key_accessors_module_defined?
-          # :nocov:
-          if IS_RUBY_1_9
-            const_defined?('MongoMapperKeys')
-          else
-            const_defined?('MongoMapperKeys', false)
-          end
-          # :nocov:
-        end
-
-        def accessors_module
-          if key_accessors_module_defined?
-            const_get 'MongoMapperKeys'
-          else
-            const_set 'MongoMapperKeys', Module.new
-          end
-        end
-
-        def create_accessors_for(key)
-          accessors = ""
-          if key.read_accessor?
-            accessors << <<-end_eval
-              def #{key.name}
-                read_key(:#{key.name})
-              end
-
-              def #{key.name}_before_type_cast
-                read_key_before_type_cast(:#{key.name})
-              end
-            end_eval
-          end
-
-          if key.write_accessor?
-            accessors << <<-end_eval
-              def #{key.name}=(value)
-                write_key(:#{key.name}, value)
-              end
-            end_eval
-          end
-
-          if key.predicate_accessor?
-            accessors << <<-end_eval
-              def #{key.name}?
-                read_key(:#{key.name}).present?
-              end
-            end_eval
-          end
-
-          if block_given?
-            accessors_module.module_eval do
-              yield
-            end
-          end
-
-          accessors_module.module_eval accessors
-          include accessors_module
+        def type_from_symbol(type)
+          return type unless type.is_a?(Symbol)
+          {
+            string: String,
+            int: Integer,
+            integer: Integer,
+            float: Float,
+            bool: Boolean,
+            boolean: Boolean,
+            array: Array,
+            time: Time
+          }[type]
         end
 
         def create_key_in_descendants(*args)
@@ -198,46 +131,47 @@ module MongoMapper
           end
         end
 
-        def create_validations_for(key)
-          attribute = key.name.to_sym
+        def create_validations_for(key, type)
+          options = @__opts[key]
+          attribute = key.to_sym
 
-          if key.options[:required]
-            if key.type == Boolean
+          if options[:required]
+            if type == Boolean
               validates_inclusion_of attribute, :in => [true, false]
             else
               validates_presence_of(attribute)
             end
           end
 
-          if key.options[:unique]
+          if options[:unique]
             validates_uniqueness_of(attribute)
           end
 
-          if key.options[:numeric]
-            number_options = key.type == Integer ? {:only_integer => true} : {}
+          if options[:numeric]
+            number_options = type == Integer ? {:only_integer => true} : {}
             validates_numericality_of(attribute, number_options)
           end
 
-          if key.options[:format]
-            validates_format_of(attribute, :with => key.options[:format])
+          if options[:format].present?
+            validates_format_of(attribute, :with => options[:format])
           end
 
-          if key.options[:in]
-            validates_inclusion_of(attribute, :in => key.options[:in])
+          if options[:in].present?
+            validates_inclusion_of(attribute, :in => options[:in])
           end
 
-          if key.options[:not_in]
-            validates_exclusion_of(attribute, :in => key.options[:not_in])
+          if options[:not_in].present?
+            validates_exclusion_of(attribute, :in => options[:not_in])
           end
 
-          if key.options[:length]
-            length_options = case key.options[:length]
+          if options[:length]
+            length_options = case options[:length]
             when Integer
-              {:minimum => 0, :maximum => key.options[:length]}
+              {:minimum => 0, :maximum => options[:length]}
             when Range
-              {:within => key.options[:length]}
+              {:within => options[:length]}
             when Hash
-              key.options[:length]
+              options[:length]
             end
             validates_length_of(attribute, length_options)
           end
@@ -265,16 +199,19 @@ module MongoMapper
 
       def initialize(attrs={})
         @_new = true
-        init_ivars
-        initialize_default_values(attrs)
+        @attributes = self.class._default_attributes.deep_dup
         self.attributes = attrs
         yield self if block_given?
       end
 
       def initialize_from_database(attrs={}, with_cast = false)
-        @_new = false
-        init_ivars
-        initialize_default_values(attrs)
+        @__type ||= {}
+        @attributes = self.class._default_attributes.deep_dup
+        embedded_associations.each do |assoc|
+          next if attrs[assoc.name.to_s].nil?
+          self.send("#{assoc.name.to_s}=", attrs[assoc.name.to_s])
+          attrs.reject! { |name, _vals| name == assoc.name.to_s }
+        end
         load_from_database(attrs, with_cast)
         self
       end
@@ -287,37 +224,33 @@ module MongoMapper
         return if attrs == nil || attrs.blank?
 
         attrs.each_pair do |key, value|
-          if respond_to?(:"#{key}=")
-            self.send(:"#{key}=", value)
+          if self.respond_to?("#{key}=")
+            self.send("#{key}=", value)
           else
-            self[key] = value
+            write_key(key, value)
           end
         end
-      end
-
-      def to_mongo(include_abbreviatons = true)
-        Hash.new.tap do |attrs|
-          self.class.unaliased_keys.each do |name, key|
-            value = self.read_key(key.name)
-            if key.type == ObjectId || !value.nil?
-              attrs[include_abbreviatons && key.persisted_name || name] = key.set(value)
-            end
-          end
-
-          embedded_associations.each do |association|
-            if documents = instance_variable_get(association.ivar)
-              if association.is_a?(Associations::OneAssociation)
-                attrs[association.name] = documents.to_mongo
-              else
-                attrs[association.name] = documents.map(&:to_mongo)
-              end
-            end
-          end
-        end
+        attrs
       end
 
       def attributes
-        to_mongo(false).with_indifferent_access
+        @attributes.to_h
+      end
+
+      def to_mongo
+        {}.tap do |hash|
+          @attributes.keys.each do |k|
+            hash[k] = @attributes[k].type.to_mongo(self[k])
+          end
+
+          embedded_associations.each do |assoc|
+            if assoc.is_a?(Associations::OneAssociation)
+              hash[assoc.name.to_s] = self.send(assoc.name).to_mongo
+            else
+              hash[assoc.name.to_s] = self.send(assoc.name).map(&:to_mongo)
+            end
+          end
+        end
       end
 
       def assign(attrs={})
@@ -357,31 +290,25 @@ module MongoMapper
       end
 
       def read_key(key_name)
-        key_name_sym = key_name.to_sym
-        if @_dynamic_attributes && @_dynamic_attributes.key?(key_name_sym)
-          @_dynamic_attributes[key_name_sym]
-        elsif key = keys[key_name.to_s]
-          if key.ivar && instance_variable_defined?(key.ivar)
-            value = instance_variable_get(key.ivar)
-          else
-            if key.ivar
-              instance_variable_set key.ivar, key.get(nil)
-            else
-              @_dynamic_attributes[key_name_sym] = key.get(nil)
-            end
-          end
-        end
+        @attributes[key_name.to_s].value
       end
 
       def [](key_name); read_key(key_name); end
-      def attribute(key_name); read_key(key_name); end
+
+      def attribute(key_name)
+        read_key(key_name).tap do |val|
+          if val.respond_to?(:_parent_document)
+            val._parent_document = self
+          end
+        end
+      end
 
       def []=(name, value)
         write_key(name, value)
       end
 
       def key_names
-        @key_names ||= keys.keys
+        @key_names ||= @attributes.keys
       end
 
       def non_embedded_keys
@@ -405,63 +332,65 @@ module MongoMapper
 
     private
 
-      def init_ivars
-        @__mm_keys = self.class.keys                                # Not dumpable
-        @__mm_default_keys = @__mm_keys.values.select(&:default?)   # Not dumpable
-        @_dynamic_attributes = {}                                      # Dumpable
-      end
-
-      def load_from_database(attrs, with_cast = false)
+      def load_from_database(attrs, with_cast)
         return if attrs == nil || attrs.blank?
 
         attrs.each do |key, value|
-          if !@__mm_keys.key?(key) && respond_to?(:"#{key}=")
-            self.send(:"#{key}=", value)
-          else
-            internal_write_key key, value, with_cast
-          end
-        end
-      end
-
-      def set_parent_document(key, value)
-        if key.type and value.instance_of?(key.type) && key.embeddable? && value.respond_to?(:_parent_document)
-          value._parent_document = self
+          @__type[key] ||= type_from_value(key, value)
+          internal_write_key key, @__type[key], value, with_cast
         end
       end
 
       # This exists to be patched over by plugins, while letting us still get to the undecorated
       # version of the method.
       def write_key(name, value)
-        init_ivars unless @__mm_keys
-        internal_write_key(name.to_s, value)
+        # detect dynamic attribute
+        @__type ||= {}
+        @__type[name] ||= type_from_value(name, value)
+
+        internal_write_key(name.to_s, @__type[name], value)
       end
 
-      def internal_write_key(name, value, cast = true)
-        key         = @__mm_keys[name] || dynamic_key(name)
-        as_mongo    = cast ? key.set(value) : value
-        as_typecast = key.get(as_mongo)
-        if key.ivar
-          if key.embeddable?
-            set_parent_document(key, value)
-            set_parent_document(key, as_typecast)
-          end
-          instance_variable_set key.ivar, as_typecast
+      def internal_write_key(name, type, value, cast = true)
+        unless @attributes.key?(name.to_s)
+          dynamic_key(name, type)
+        end
+
+        if cast
+          @attributes[name.to_s] = ::ActiveModel::Attribute.from_user(name, value, type, @attributes[name.to_s])
         else
-          @_dynamic_attributes[key.name.to_sym] = as_typecast
+          @attributes[name.to_s] = ::ActiveModel::Attribute.from_database(name, value, type)
         end
-        value
       end
 
-      def dynamic_key(name)
-        self.class.key(name, :__dynamic => true)
+      def dynamic_key(name, type)
+        self.class.key(name, type, :__dynamic => true)
       end
 
-      def initialize_default_values(except = {})
-        @__mm_default_keys.each do |key|
-          if !(except && except.key?(key.name))
-            internal_write_key key.name, key.default_value, false
+      def attribute=(attribute_name, value)
+        super
+        if value.respond_to?(:_parent_document=)
+          value._parent_document = self
+        end
+      end
+
+      def type_from_value(name, val)
+        attr = @attributes[name]
+        type = attr.type
+
+        # detect dynamic attribute
+        if attr.class == ::ActiveModel::Attribute.null(name).class
+          type = case val
+          when ::BSON::ObjectId
+            ObjectId
+          when TrueClass, FalseClass
+            Boolean
+          else
+            val.class
           end
         end
+
+        type
       end
     end
   end

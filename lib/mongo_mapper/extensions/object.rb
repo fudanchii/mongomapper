@@ -5,6 +5,14 @@ module MongoMapper
       extend ActiveSupport::Concern
 
       module ClassMethods
+        def serialize(value)
+          to_mongo(value)
+        end
+
+        def cast(value)
+          value
+        end
+
         def to_mongo(value)
           value
         end
