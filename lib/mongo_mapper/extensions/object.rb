@@ -14,20 +14,15 @@ module MongoMapper
         end
 
         def to_mongo(value)
+          if value.respond_to?(:to_mongo)
+            value.to_mongo
+          end
           value
         end
 
         def from_mongo(value)
           value
         end
-      end
-
-      def to_mongo
-        self.class.to_mongo(self)
-      end
-
-      def _mongo_mapper_deep_copy_
-        self
       end
     end
   end

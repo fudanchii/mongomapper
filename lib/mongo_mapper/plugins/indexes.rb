@@ -27,7 +27,7 @@ module MongoMapper
         def dealias_options(options)
           case options
           when Symbol, String
-            {abbr(options) => 1}
+            {abbr(options).to_sym => 1}
           when Hash
             dealias_keys(options)
           when Array

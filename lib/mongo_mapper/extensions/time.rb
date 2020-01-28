@@ -8,6 +8,10 @@ module MongoMapper
         to_mongo(value)
       end
 
+      def deserialize(value)
+        from_mongo(value)
+      end
+
       def cast(value)
         to_mongo(value)
       end
@@ -28,6 +32,14 @@ module MongoMapper
         else
           value
         end
+      end
+
+      def changed_in_place?(old, new)
+        false
+      end
+
+      def changed?(old, new, _new_value_before_type_cast)
+        old != new
       end
     end
   end

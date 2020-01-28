@@ -39,7 +39,7 @@ describe 'A document with protected attributes' do
   it "should work with :protected shortcut when defining key" do
     Doc() do
       key :user_id, ObjectId, :protected => true
-    end.protected_attributes.should == [:user_id].to_set
+    end.protected_attributes.should == ['user_id'].to_set
   end
 
   it "should assign protected attribute through accessor" do

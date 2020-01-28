@@ -91,6 +91,8 @@ module MongoMapper
   end
 
   extend Connection
+
+  class DocumentNotInitializedError < StandardError; end
 end
 
 Dir[File.join(File.dirname(__FILE__), 'mongo_mapper', 'extensions', '*.rb')].each do |extension|

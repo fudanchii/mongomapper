@@ -29,7 +29,7 @@ module MongoMapper
           end
         end
 
-        def respond_to?(method)
+        def respond_to?(method, _include_all = false)
           DynamicFinder.new(method).found? || super
         end
 

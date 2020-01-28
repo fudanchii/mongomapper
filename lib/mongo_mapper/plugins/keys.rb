@@ -53,8 +53,20 @@ module MongoMapper
         alias_method :unalias, :dealias_keys
 
         def dealias_key(name)
-          return name if @__opts.nil? || @__opts[name].nil?
-          @__opts[name][:abbr] || @__opts[name][:alias] || @__opts[name][:field_name] || name
+          keyname = name.to_s
+          return name if @__opts.nil? || @__opts[keyname].nil?
+          @__opts[keyname][:abbr] || @__opts[keyname][:alias] || @__opts[keyname][:field_name] || name
+        end
+
+        alias_method :persisted_name, :dealias_key
+        alias_method :abbr, :dealias_key
+
+        def alias_key(name)
+          name = name.to_s
+          return name if @__opts.nil?
+          key_name = @__opts.detect { |k, v| v[:abbr].to_s == name || v[:alias].to_s == name || v[:field_name].to_s == name }
+          return name if key_name.nil?
+          key_name[0] || name
         end
 
         def key(name, type = String, **opts)
@@ -62,6 +74,7 @@ module MongoMapper
           type = type_from_symbol(type)
           @__opts ||= {}
           @__opts[name] = opts.dup
+          create_index(name) if opts[:index]
           create_validations_for(name, type)
           define_default_attribute(name, opts.fetch(:default, nil), type)
         end
@@ -240,7 +253,19 @@ module MongoMapper
       def to_mongo
         {}.tap do |hash|
           @attributes.keys.each do |k|
-            hash[k] = @attributes[k].type.to_mongo(self[k])
+            # next unless assert_value_changed?(k)
+            type = @attributes[k].type
+            serialized_key = self.class.dealias_key(k)
+            value = self[k]
+            case
+            when type == Array
+              value = self[k].map { |elt| elt.class.to_mongo(elt) }
+            when type == Hash
+              value = {}.tap do |k_hash|
+                self[k].each { |key, val| k_hash[key] = val.class.to_mongo(val) }
+              end
+            end
+            hash[serialized_key] = @attributes[k].type.to_mongo(value)
           end
 
           embedded_associations.each do |assoc|
@@ -251,6 +276,11 @@ module MongoMapper
             end
           end
         end
+      end
+
+      def assert_value_changed?(key)
+        return true if key == '_id' && !respond_to?("#{key}_changed?")
+        respond_to?("#{key}_changed?") && send("#{key}_changed?")
       end
 
       def assign(attrs={})
@@ -290,6 +320,7 @@ module MongoMapper
       end
 
       def read_key(key_name)
+        raise DocumentNotInitializedError.new(key_name) if @attributes.nil?
         @attributes[key_name.to_s].value
       end
 
@@ -319,23 +350,17 @@ module MongoMapper
         @embedded_keys ||= keys.values.select(&:embeddable?)
       end
 
-    protected
+    private
 
       def unalias_key(name)
-        name = name.to_s
-        if key = keys[name]
-          key.name
-        else
-          name
-        end
+        self.class.alias_key(name)
       end
-
-    private
 
       def load_from_database(attrs, with_cast)
         return if attrs == nil || attrs.blank?
 
         attrs.each do |key, value|
+          key = self.class.alias_key(key)
           @__type[key] ||= type_from_value(key, value)
           internal_write_key key, @__type[key], value, with_cast
         end
@@ -344,6 +369,8 @@ module MongoMapper
       # This exists to be patched over by plugins, while letting us still get to the undecorated
       # version of the method.
       def write_key(name, value)
+        raise DocumentNotInitializedError.new(name) if @attributes.nil?
+
         # detect dynamic attribute
         @__type ||= {}
         @__type[name] ||= type_from_value(name, value)
@@ -368,9 +395,10 @@ module MongoMapper
       end
 
       def attribute=(attribute_name, value)
-        super
-        if value.respond_to?(:_parent_document=)
-          value._parent_document = self
+        super.tap do |_|
+          if value.respond_to?(:_parent_document=)
+            value._parent_document = self
+          end
         end
       end
 
