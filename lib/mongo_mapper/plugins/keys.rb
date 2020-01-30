@@ -220,10 +220,11 @@ module MongoMapper
       def initialize_from_database(attrs={}, with_cast = false)
         @__type ||= {}
         @attributes = self.class._default_attributes.deep_dup
+        attrs = attrs.with_indifferent_access
         embedded_associations.each do |assoc|
-          next if attrs[assoc.name.to_s].nil?
-          self.send("#{assoc.name.to_s}=", attrs[assoc.name.to_s])
-          attrs.reject! { |name, _vals| name == assoc.name.to_s }
+          next if attrs[assoc.name].nil?
+          self.send("#{assoc.name.to_s}=", attrs[assoc.name])
+          attrs.reject! { |name, _vals| name.to_s == assoc.name.to_s }
         end
         load_from_database(attrs, with_cast)
         self
