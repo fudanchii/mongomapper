@@ -196,7 +196,7 @@ class Catalog
   many :medias, :polymorphic => true do
     def visible
       # for some reason we can't use select here
-      find_all { |m| m.visible? }
+      find_all { |m| m.visible.present? }
     end
   end
 end
