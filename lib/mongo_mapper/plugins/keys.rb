@@ -55,7 +55,7 @@ module MongoMapper
         def dealias_key(name)
           keyname = name.to_s
           return name if @__opts.nil? || @__opts[keyname].nil?
-          @__opts[keyname][:abbr] || @__opts[keyname][:alias] || @__opts[keyname][:field_name] || name
+          (@__opts[keyname][:abbr] || @__opts[keyname][:alias] || @__opts[keyname][:field_name] || name).to_s
         end
 
         alias_method :persisted_name, :dealias_key
