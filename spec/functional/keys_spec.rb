@@ -188,7 +188,8 @@ describe "Keys" do
       end
 
       it "should serialize with aliased keys" do
-        AliasedKeyModel.collection.find.first.keys.should =~ %w(_id f bar)
+        # activemodel-6.0 update: all keys are persisted by default now
+        AliasedKeyModel.collection.find.first.keys.should =~ %w(_id f bar alternate_field_name with-hyphens)
 
         AliasedKeyModel.first.tap do |d|
           d.foo.should == "whee!"
