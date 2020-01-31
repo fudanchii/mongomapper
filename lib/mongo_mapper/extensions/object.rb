@@ -24,6 +24,10 @@ module MongoMapper
           value
         end
       end
+
+      def _mongo_mapper_deep_copy_
+        dup
+      end
     end
   end
 end

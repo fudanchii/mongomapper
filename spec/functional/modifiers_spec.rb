@@ -71,7 +71,7 @@ module Modifiers
 
             expect_any_instance_of(Mongo::Collection).to receive(:update_many).with(
               {:title => "Better Be Safe than Sorry"},
-              {'$unset' => {:tags => 1}},
+              {'$unset' => {'tags' => 1}},
               {:w => 1}
             )
             page_class.unset({:title => "Better Be Safe than Sorry"}, :tags, {:w => 1})
@@ -198,7 +198,7 @@ module Modifiers
 
             expect_any_instance_of(Mongo::Collection).to receive(:update_many).with(
               {:title => "Better Be Safe than Sorry"},
-              {'$set' => {:title => "I like safety."}},
+              {'$set' => {'title' => "I like safety."}},
               {:w => 1}
             )
             page_class.set({:title => "Better Be Safe than Sorry"}, {:title => "I like safety."}, {:safe => true})

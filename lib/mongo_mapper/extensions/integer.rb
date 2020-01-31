@@ -27,6 +27,9 @@ module MongoMapper
         value && value.to_i
       end
 
+      def assert_valid_value(_)
+      end
+
       def changed_in_place?(old, new)
         from_mongo(old) != new
       end
