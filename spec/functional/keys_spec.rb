@@ -220,7 +220,7 @@ describe "Keys" do
       it "should permit dealiasing of update operations" do
         m = AliasedKeyModel.first
         m.update_attributes(:foo => 1)
-        AliasedKeyModel.collection.find.first["f"].should == 1
+        AliasedKeyModel.collection.find.first["f"].should == '1'
         AliasedKeyModel.collection.find.first["foo"].should be_nil
       end
 
