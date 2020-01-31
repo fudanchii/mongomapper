@@ -5,6 +5,10 @@ module MongoMapper
       autoload :ActiveRecordAssociationAdapter, "mongo_mapper/plugins/rails/active_record_association_adapter"
       extend ActiveSupport::Concern
 
+      included do
+        attribute_method_suffix "_before_type_cast"
+      end
+
       def to_param
         id.to_s if persisted?
       end
@@ -46,6 +50,10 @@ module MongoMapper
         super
       end
 
+      def attribute_before_type_cast(attr)
+        @attributes[attr.to_s].value_before_type_cast
+      end
+
       module ClassMethods
         def has_one(*args)
           one(*args)
@@ -64,14 +72,6 @@ module MongoMapper
         # association helpers in gems like simple_form and formtastic.
         def reflect_on_association(name)
           ActiveRecordAssociationAdapter.for_association(associations[name]) if associations[name]
-        end
-
-        def create_accessors_for(key)
-          super do
-            define_method "#{key.name}_before_type_cast" do
-              read_attribute_before_type_cast key.name
-            end
-          end
         end
       end
     end
