@@ -7,6 +7,17 @@ module MongoMapper
       class DecoratedPluckyQuery < ::Plucky::Query
         include DynamicQuerying::ClassMethods
 
+        def where(predicates)
+          super(
+            {}.tap do |arg|
+              predicates.each do |k, v|
+                type = keys[k.to_s].type
+                arg[k] = type.respond_to?(:to_mongo) ? transform_to_mongo(type, v) : v
+              end
+            end
+          )
+        end
+
         def delete(*ids)
           where(:_id => ids.flatten).remove
         end
@@ -32,6 +43,7 @@ module MongoMapper
         def criteria_hash
           @model.dealias_keys super
         end
+
         def options_hash
           super.tap do |options|
             case options[:projection]
@@ -58,6 +70,42 @@ module MongoMapper
         end
 
       private
+
+        def transform_to_mongo(type, value)
+          if value.is_a?(Array)
+            return array_to_mongo(type, value)
+          end
+
+          if value.is_a?(Hash)
+            return hash_to_mongo(type, value)
+          end
+
+          type.to_mongo(value)
+        end
+
+        def array_to_mongo(type, value)
+          value.map do |ival|
+            if ival.is_a?(Array)
+              array_to_mongo(type, ival)
+            elsif ival.is_a?(Hash)
+              hash_to_mongo(type, ival)
+            else
+              type.to_mongo(ival)
+            end
+          end
+        end
+
+        def hash_to_mongo(type, value)
+          value.each do |k, v|
+            value[k] = if v.is_a?(Array)
+                         array_to_mongo(v)
+                       elsif v.is_a?(Hash)
+                         hash_to_mongo(v)
+                       else
+                         type.to_mongo(v)
+                       end
+          end
+        end
 
         def method_missing(method, *args, &block)
           return super unless model.respond_to?(method)
