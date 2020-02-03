@@ -64,7 +64,7 @@ module MongoMapper
         end
 
         def column_names
-          unaliased_keys.keys
+          dealias_keys(_default_attributes.to_h).map { |v| v.first }
         end
 
         # Returns returns an ActiveRecordAssociationAdapter for an association. This adapter has an API that is a

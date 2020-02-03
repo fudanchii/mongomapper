@@ -28,18 +28,6 @@ module MongoMapper
           _default_attributes
         end
 
-        def dynamic_keys
-          @dynamic_keys ||= Hash[*unaliased_keys.select {|k, v| v.dynamic? }.flatten(1)]
-        end
-
-        def defined_keys
-          @defined_keys ||= Hash[*unaliased_keys.select {|k, v| !v.dynamic? }.flatten(1)]
-        end
-
-        def unaliased_keys
-          @unaliased_keys ||= Hash[*keys.select {|k, v| k == v.name }.flatten(1)]
-        end
-
         def dealias_keys(hash)
           out = {}
           hash.each do |k, v|
