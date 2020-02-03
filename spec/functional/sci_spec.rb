@@ -105,8 +105,8 @@ describe "Single collection inheritance (document)" do
       end
 
       it "should remove the _type key" do
-        DocParent.keys.should_not have_key "_type"
-        DocSCIOrphan.keys.should_not have_key "_type"
+        DocParent.keys['_type'].class.should == ::ActiveModel::Attribute.null('_type').class
+        DocSCIOrphan.keys['_type'].class.should == ::ActiveModel::Attribute.null('_type').class
       end
 
       context "and then is subclassed again" do
@@ -125,8 +125,8 @@ describe "Single collection inheritance (document)" do
         end
 
         it "should have the _type key" do
-          DocSCIOrphan.keys.should have_key "_type"
-          DocSCIOrphanChild.keys.should have_key "_type"
+          DocSCIOrphan.keys.keys.should include("_type")
+          DocSCIOrphanChild.keys.keys.should include("_type")
         end
       end
     end
