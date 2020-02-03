@@ -34,4 +34,14 @@ end
 
 class Object
   include MongoMapper::Extensions::Object
+
+  private
+
+  def method_missing(name, *args, &block)
+    if name.to_sym != :to_mongo
+      return super
+    end
+
+    self.class.to_mongo(self)
+  end
 end

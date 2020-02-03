@@ -10,7 +10,7 @@ module MongoMapper
         value
       end
 
-      def to_mongo
+      def to_mongo(value)
         nil
       end
 
@@ -23,4 +23,8 @@ end
 
 class NilClass
   include MongoMapper::Extensions::NilClass
+
+  def to_mongo
+    nil
+  end
 end

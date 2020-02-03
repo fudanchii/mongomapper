@@ -36,27 +36,6 @@ module MongoMapper
         end
       end
 
-      def deserialize(value)
-        from_mongo(value)
-      end
-
-      def serialize(value)
-        to_mongo(value)
-      end
-
-      def cast(value)
-        to_mongo(value)
-      end
-
-      def to_mongo(value)
-        value && value.to_s
-      end
-
-      def from_mongo(value)
-        value && value.to_s
-      end
-
-
       def _mongo_mapper_deep_copy_
         self.dup
       end

@@ -34,6 +34,10 @@ module MongoMapper
         end
       end
 
+      def to_mongo
+        self.class.to_mongo(self)
+      end
+
       def _mongo_mapper_deep_copy_
         self.class.new.tap do |new_hash|
           each do |key, value|
@@ -46,5 +50,9 @@ module MongoMapper
 end
 
 class Hash
+  include MongoMapper::Extensions::Hash
+end
+
+class ::ActiveSupport::HashWithIndifferentAccess
   include MongoMapper::Extensions::Hash
 end
