@@ -14,6 +14,8 @@ module MongoMapper
         extend ActiveSupport::DescendantsTracker
 
         key :_id, ObjectId, :default => lambda { BSON::ObjectId.new }
+
+        attribute_method_suffix "?"
       end
 
       module ClassMethods
@@ -67,6 +69,10 @@ module MongoMapper
           key_name = @__opts.detect { |k, v| v[:abbr].to_s == name || v[:alias].to_s == name || v[:field_name].to_s == name }
           return name if key_name.nil?
           key_name[0] || name
+        end
+
+        def options(name)
+          @__opts&.fetch(name, {})
         end
 
         def key(name, type = String, **opts)
@@ -248,7 +254,7 @@ module MongoMapper
       end
 
       def attributes
-        @attributes.to_h
+        ActiveSupport::HashWithIndifferentAccess.new(@attributes)
       end
 
       def to_mongo
@@ -352,6 +358,10 @@ module MongoMapper
       end
 
     private
+
+      def attribute?(attr)
+        self.send(attr.to_s).present?
+      end
 
       def unalias_key(name)
         self.class.alias_key(name)
