@@ -346,15 +346,15 @@ module MongoMapper
       end
 
       def key_names
-        @key_names ||= @attributes.keys
+        @key_names ||= non_embedded_keys + embedded_keys
       end
 
       def non_embedded_keys
-        @non_embedded_keys ||= keys.values.select { |key| !key.embeddable? }
+        @attributes.keys
       end
 
       def embedded_keys
-        @embedded_keys ||= keys.values.select(&:embeddable?)
+        associations.map { |k, v| k.to_s if v.embeddable? }.compact
       end
 
     private
