@@ -21,11 +21,11 @@ module Userstamps
       end
 
       it "should add creator_id key" do
-        @docs.each{ |d| d.keys.should include('creator_id') }
+        @docs.each{ |d| d.keys.keys.should include('creator_id') }
       end
 
       it "should add updater_id key" do
-        @docs.each{ |d| d.keys.should include('updater_id') }
+        @docs.each{ |d| d.keys.keys.should include('updater_id') }
       end
 
       it "should add belongs_to creator" do

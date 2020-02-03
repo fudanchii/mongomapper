@@ -41,6 +41,8 @@ module MongoMapper
       def changed?(old, new, _new_value_before_type_cast)
         old != new
       end
+
+      def assert_valid_value(_); end
     end
   end
 end

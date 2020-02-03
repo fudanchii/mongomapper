@@ -36,6 +36,8 @@ module MongoMapper
       def changed_in_place?(old, new)
         false
       end
+
+      def assert_valid_value(_); end
     end
   end
 end
