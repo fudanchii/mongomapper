@@ -22,7 +22,7 @@ module MongoMapper
         else
           time_class = ::Time.zone || ::Time
           time = value.is_a?(::Time) ? value : time_class.parse(value.to_s)
-          at(time.to_i, time.usec / 1000 * 1000).utc
+          time.in_time_zone('UTC')
         end
       end
 
