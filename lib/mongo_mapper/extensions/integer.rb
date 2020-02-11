@@ -31,7 +31,7 @@ module MongoMapper
       end
 
       def changed_in_place?(old, new)
-        from_mongo(old) != new
+        false
       end
 
       def changed?(old, new, _new_value_before_type_cast)

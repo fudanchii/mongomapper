@@ -23,7 +23,7 @@ module MongoMapper
       end
 
       def changed_in_place?(old, new)
-        from_mongo(old) != new
+        false
       end
     end
   end
