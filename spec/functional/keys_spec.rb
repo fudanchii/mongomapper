@@ -6,11 +6,11 @@ describe "Keys" do
       key :foo, String
 
       def modify_foo
-        @foo = :baz
+        self.foo = :baz
       end
 
       def get_foo
-        @foo
+        foo
       end
     end
 
@@ -59,7 +59,7 @@ describe "Keys" do
     end
   end
 
-  it "should not bomb if a key is written before Keys#initialize gets to get called" do
+  it "should bomb if a key is written before Keys#initialize is called" do
     doc = Class.new do
       include MongoMapper::Document
 
@@ -70,10 +70,25 @@ describe "Keys" do
       end
     end
 
-    expect { doc.new }.to_not raise_error
+    expect { doc.new }.to raise_error MongoMapper::DocumentNotInitializedError
   end
 
-  it "should not bomb if a key is read before Keys#initialize gets to get called" do
+  it "should not bomb if a key is written after Keys#initialize is called" do
+    doc = Class.new do
+      include MongoMapper::Document
+
+      def initialize
+        self.class.key :something, String
+        super
+        self.something = :other_thing
+      end
+    end
+
+    expect { doc.new }.to_not raise_error
+    doc.new.something.should == 'other_thing'
+  end
+
+  it "should bomb if a key is read before Keys#initialize gets to get called" do
     doc = Class.new do
       include MongoMapper::Document
 
@@ -81,6 +96,20 @@ describe "Keys" do
         self.class.key :something, String
         self.something
         super
+      end
+    end
+
+    expect { doc.new }.to raise_error MongoMapper::DocumentNotInitializedError
+  end
+
+  it "should not bomb if a key is read after Keys#initialize gets to get called" do
+    doc = Class.new do
+      include MongoMapper::Document
+
+      def initialize
+        self.class.key :something, String
+        super
+        self.something
       end
     end
 
@@ -101,62 +130,26 @@ describe "Keys" do
     end
   end
 
-  context "key segmenting" do
-    let(:doc) {
-      Doc {
-        key :defined
-      }
-    }
-
-    before do
-      doc.collection.insert_one(:dynamic => "foo")
-      doc.first
-    end
-
-    describe "#dynamic_keys" do
-      it "should find dynamic keys" do
-        doc.dynamic_keys.keys.should == ["dynamic"]
-      end
-    end
-
-    describe "#defined_keys" do
-      it "should find defined keys" do
-        doc.defined_keys.keys.should =~ ["_id", "defined"]
-      end
-    end
-  end
-
   describe "with invalid names" do
-    it "should warn when key names start with an uppercase letter" do
-      doc = Doc {}
-      expect(Kernel).to receive(:warn).once.with(/may not start with uppercase letters/)
-      doc.class_eval do
-        key :NotConstant
-      end
-    end
-
     it "should handle keys that start with uppercase letters by translating their first letter to lowercase" do
       doc = Doc {}
-      allow(Kernel).to receive(:warn)
       doc.class_eval do
         key :NotConstant
       end
       doc.collection.insert_one("NotConstant" => "Just data!")
-      doc.first.notConstant.should == "Just data!"
+      doc.first.NotConstant.should == "Just data!"
     end
 
-    it "should not create accessors for bad keys" do
+    it "will create accessors for bad keys" do
       doc = Doc {}
-      expect(doc).to_not receive(:create_accessors_for)
       doc.class_eval do
         key :"bad-name", :__dynamic => true
       end
-      expect { doc.new.method(:"bad-name") }.to raise_error(NameError)
+      doc.new.respond_to?(:"bad-name").should == true
     end
 
     it "should not create accessors for reserved keys" do
       doc = Doc {}
-      expect(doc).to_not receive(:create_accessors_for)
       doc.class_eval do
         key :"class", :__dynamic => true
       end
@@ -168,7 +161,7 @@ describe "Keys" do
         key :good_name
       }
       doc.new.good_name.should be_nil
-      expect { doc.new.method("good_name") }.to_not raise_error
+      expect { doc.new.send("good_name") }.to_not raise_error
     end
   end
 
@@ -195,7 +188,8 @@ describe "Keys" do
       end
 
       it "should serialize with aliased keys" do
-        AliasedKeyModel.collection.find.first.keys.should =~ %w(_id f bar)
+        # activemodel-6.0 update: all keys are persisted by default now
+        AliasedKeyModel.collection.find.first.keys.should =~ %w(_id f bar alternate_field_name with-hyphens)
 
         AliasedKeyModel.first.tap do |d|
           d.foo.should == "whee!"
@@ -226,7 +220,7 @@ describe "Keys" do
       it "should permit dealiasing of update operations" do
         m = AliasedKeyModel.first
         m.update_attributes(:foo => 1)
-        AliasedKeyModel.collection.find.first["f"].should == 1
+        AliasedKeyModel.collection.find.first["f"].should == '1'
         AliasedKeyModel.collection.find.first["foo"].should be_nil
       end
 
@@ -304,36 +298,5 @@ describe "Keys" do
         owner.collection.find.first["other_documents"][0]["en"].should == "Underling"
       end
     end
-  end
-
-  describe "removing keys" do
-    DocWithRemovedKey = Doc do
-      key :something
-      validates_uniqueness_of :something
-      remove_key :something
-    end
-
-    it 'should remove the key' do
-      DocWithRemovedKey.keys.should_not have_key "_something"
-    end
-
-    it 'should remove validations' do
-      DocWithRemovedKey._validate_callbacks.should be_empty
-    end
-  end
-
-  describe "removing keys in the presence of a validation method" do
-    DocWithRemovedValidator = Doc do
-      key :something
-      validate :something_valid?
-      remove_key :something
-
-      def something_valid?; true; end
-    end
-
-    it 'should remove the key' do
-      DocWithRemovedKey.keys.should_not have_key "_something"
-    end
-
   end
 end

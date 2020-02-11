@@ -210,36 +210,36 @@ describe "Document" do
       it "should list all the keys and default non nil attributes" do
        doc = @document.new
        doc.keys.keys.sort.should == ['_id', 'age', 'name']
-       doc.attributes.keys.sort.should == ['_id']
+       doc.attributes.keys.sort.should == ['_id', 'age', 'name']
       end
 
       it "should list all the keys and non nil attributes" do
        doc = @document.new(:name => "John")
        doc.keys.keys.sort.should == ['_id', 'age', 'name']
-       doc.attributes.keys.sort.should == ['_id','name']
+       doc.attributes.keys.sort.should == ['_id', 'age', 'name']
       end
 
       it "should list all the keys and pickup changed nil attributes" do
        doc = @document.new(:name => "John")
        doc.keys.keys.sort.should == ['_id', 'age', 'name']
-       doc.attributes.keys.sort.should == ['_id','name']
+       doc.attributes.keys.sort.should == ['_id', 'age', 'name']
 
        doc.name = nil
 
        doc.keys.keys.sort.should == ['_id', 'age', 'name']
-       doc.attributes.keys.sort.should == ['_id']
+       doc.attributes.keys.sort.should == ['_id', 'age', 'name']
       end
 
       it "should list all the keys and pickup changed nil and non-nil attributes" do
        doc = @document.new(:name => "John")
        doc.keys.keys.sort.should == ['_id', 'age', 'name']
-       doc.attributes.keys.sort.should == ['_id','name']
+       doc.attributes.keys.sort.should == ['_id', 'age', 'name']
 
        doc.name = nil
        doc.age = 12
 
        doc.keys.keys.sort.should == ['_id', 'age', 'name']
-       doc.attributes.keys.sort.should == ['_id','age']
+       doc.attributes.keys.sort.should == ['_id','age', 'name']
       end
 
     end

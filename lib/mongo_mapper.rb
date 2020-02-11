@@ -65,6 +65,7 @@ module MongoMapper
     autoload :Userstamps,         'mongo_mapper/plugins/userstamps'
     autoload :Validations,        'mongo_mapper/plugins/validations'
     autoload :Touch,              'mongo_mapper/plugins/touch'
+    autoload :DocAsType,          'mongo_mapper/plugins/doc_as_type'
 
     module Associations
       autoload :Base,                         'mongo_mapper/plugins/associations/base'
@@ -90,6 +91,8 @@ module MongoMapper
   end
 
   extend Connection
+
+  class DocumentNotInitializedError < StandardError; end
 end
 
 Dir[File.join(File.dirname(__FILE__), 'mongo_mapper', 'extensions', '*.rb')].each do |extension|

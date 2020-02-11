@@ -75,7 +75,19 @@ module MongoMapper
       end
 
       def _dealiased_attributes
-        self.class.dealias_keys(attributes)
+        self.class.dealias_keys(attributes).merge(_embedded_associations)
+      end
+
+      def _embedded_associations
+        {}.tap do |hash|
+          associations.each do |k, v|
+            if embedded_associations.include?(v)
+              self.send(k).tap do |val|
+                hash[k.to_s] = val.is_a?(Array) ? val.map(&:attributes) : val.attributes
+              end
+            end
+          end
+        end
       end
 
       def _reset_attributes_for_partial_update

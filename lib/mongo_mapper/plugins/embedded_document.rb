@@ -19,7 +19,7 @@ module MongoMapper
       end
 
       def new?
-        _root_document.try(:new?) || @_new
+        !!(_root_document.try(:new?) || @_new)
       end
 
       def destroyed?

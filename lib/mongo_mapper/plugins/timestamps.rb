@@ -20,7 +20,7 @@ module MongoMapper
       def update_timestamps
         if self.record_timestamps
           now = Time.now.utc
-          self[:created_at] = now if !persisted? && !created_at?
+          self[:created_at] = now if !persisted? && !self[:created_at].present?
           self[:updated_at] = now
         end
         true

@@ -20,6 +20,7 @@ module MongoMapper
               end
 
               proxy.replace(value)
+
               value
             end
 

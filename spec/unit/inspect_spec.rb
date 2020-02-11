@@ -12,8 +12,8 @@ describe "Inspect" do
       @doc = @document.new(:name => 'John', :age => 29)
     end
 
-    it "should print out non-nil attributes in alpha sorted order" do
-      @doc.inspect.should =~ /_id:.*, age: 29, name: "John"/
+    it "should print all attributes in alpha sorted order" do
+      @doc.inspect.should =~ /_id:.*, age: 29, email: nil, name: "John"/
     end
 
     it "should print out all attributes when (optional) include_super argument is true" do

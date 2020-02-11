@@ -2,6 +2,18 @@
 module MongoMapper
   module Extensions
     module Date
+      def serialize(value)
+        to_mongo(value)
+      end
+
+      def deserialize(value)
+        from_mongo(value)
+      end
+
+      def cast(value)
+        to_mongo(value)
+      end
+
       def to_mongo(value)
         if value.nil? || (value.instance_of?(String) && '' === value)
           nil
@@ -16,10 +28,24 @@ module MongoMapper
       def from_mongo(value)
         value.to_date if value
       end
+
+      def changed?(old, new, _new_before_type_cast)
+        old.to_i != new.to_i
+      end
+
+      def changed_in_place?(old, new)
+        false
+      end
+
+      def assert_valid_value(_); end
     end
   end
 end
 
 class Date
   extend MongoMapper::Extensions::Date
+end
+
+class ActiveModel::Type::Date
+  include MongoMapper::Extensions::Date
 end

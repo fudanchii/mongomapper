@@ -6,6 +6,7 @@ require 'fileutils'
 require 'timecop'
 require "generator_spec/test_case"
 # require 'ruby-debug'
+require 'byebug'
 
 if RUBY_PLATFORM != "java"
   if ENV['TRAVIS']

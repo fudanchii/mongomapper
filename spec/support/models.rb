@@ -10,6 +10,22 @@ class WindowSize
     value.is_a?(self) ? value : WindowSize.new(value)
   end
 
+  def self.changed_in_place?(_old, _new)
+    false
+  end
+
+  def self.changed?(old, new, _new_before_type_cast)
+    old.width != new.width || old.height != new.height
+  end
+
+  def self.serialize(value)
+    to_mongo value
+  end
+
+  def self.deserialize(value)
+    from_mongo value
+  end
+
   def initialize(*args)
     @width, @height = args.flatten
   end

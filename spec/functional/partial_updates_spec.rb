@@ -133,6 +133,8 @@ describe "Partial Updates" do
         "string_field" => "bar",
         "array_field" => [],
         "hash_field" => {},
+        "integer_field" => nil,
+        "boolean_field" => nil,
         "created_at" => kind_of(Time),
         "updated_at" => kind_of(Time),
       }, {upsert: true})
@@ -167,7 +169,7 @@ describe "Partial Updates" do
 
       fields_for_partial_updates = @obj.fields_for_partial_update
       fields_for_partial_updates.keys.should =~ [:set_fields, :unset_fields]
-      fields_for_partial_updates[:set_fields].should =~ ["_id", "string_field"]
+      expect(fields_for_partial_updates[:set_fields]).to include("_id", "string_field")
       fields_for_partial_updates[:unset_fields] == []
     end
 
@@ -181,7 +183,7 @@ describe "Partial Updates" do
 
     it "should be cleared after save" do
       @obj.string_field = "foo"
-      @obj.fields_for_partial_update[:set_fields].should =~ ["_id", "string_field"]
+      expect(@obj.fields_for_partial_update[:set_fields]).to include("_id", "string_field")
 
       @obj.save!
 
@@ -211,7 +213,7 @@ describe "Partial Updates" do
 
     it "should detect non-key based values" do
       @obj.attributes = { :non_keyed_field => "foo" }
-      @obj.fields_for_partial_update[:set_fields].should =~ ["_id", "non_keyed_field"]
+      expect(@obj.fields_for_partial_update[:set_fields]).to include("_id", "non_keyed_field")
     end
 
     it "should allow fields that have numbers to be changed" do
@@ -273,7 +275,7 @@ describe "Partial Updates" do
       @obj = @klass.new({
         :string_field => "foo"
       })
-      @obj.fields_for_partial_update[:set_fields].should =~ ["_id", "string_field"]
+      expect(@obj.fields_for_partial_update[:set_fields]).to include("_id", "string_field")
     end
 
     it "should be able to detect any change in an array (deep copy)" do |variable|

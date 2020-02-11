@@ -4,9 +4,8 @@ module MongoMapper
     module Inspect
       extend ActiveSupport::Concern
 
-      def inspect(include_nil = false)
-        keys = include_nil ? key_names : attributes.keys
-        attributes_as_nice_string = keys.sort.collect do |name|
+      def inspect(_nil = false)
+        attributes_as_nice_string = key_names.sort.collect do |name|
           "#{name}: #{self.send(:"#{name}").inspect}"
         end.join(", ")
         "#<#{self.class} #{attributes_as_nice_string}>"

@@ -18,9 +18,9 @@ describe "OneAsProxy" do
   end
 
   it "should not define any keys" do
-    count = @post_class.keys.length
+    count = @post_class.keys.keys.length
     @post_class.one :author, :class => @author_class
-    @post_class.keys.length.should == count
+    @post_class.keys.keys.length.should == count
   end
 
   it "should allow assignment of associated document using a hash" do

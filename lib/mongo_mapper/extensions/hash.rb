@@ -5,9 +5,37 @@ module MongoMapper
       extend ActiveSupport::Concern
 
       module ClassMethods
+        def serialize(value)
+          to_mongo(value)
+        end
+
+        def deserialize(value)
+          from_mongo(value)
+        end
+
+        def cast(value)
+          to_mongo(value)
+        end
+
+        def to_mongo(value)
+          HashWithIndifferentAccess.new(value || {})
+        end
+
         def from_mongo(value)
           HashWithIndifferentAccess.new(value || {})
         end
+
+        def changed?(old, new, _new_before_type_cast)
+          old != new
+        end
+
+        def changed_in_place?(old, new)
+          false
+        end
+      end
+
+      def to_mongo
+        self.class.to_mongo(self)
       end
 
       def _mongo_mapper_deep_copy_
@@ -22,5 +50,9 @@ module MongoMapper
 end
 
 class Hash
+  include MongoMapper::Extensions::Hash
+end
+
+class ::ActiveSupport::HashWithIndifferentAccess
   include MongoMapper::Extensions::Hash
 end

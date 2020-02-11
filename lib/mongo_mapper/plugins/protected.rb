@@ -18,7 +18,7 @@ module MongoMapper
 
         def key(*args)
           key = super
-          attr_protected key.name.to_sym if key.options[:protected]
+          attr_protected key.name if @__opts[key.name][:protected]
           key
         end
       end

@@ -16,7 +16,7 @@ module MongoMapper
             subclass.single_collection_parent = self
             subclass.instance_variable_set("@single_collection_inherited", true)
           else
-            remove_key :_type
+            _default_attributes['_type'] = ::ActiveModel::Attribute.null('_type')
           end
         end
 
@@ -42,7 +42,7 @@ module MongoMapper
 
         def set_collection_name(name)
           if single_collection_inherited?
-            single_collection_parent.remove_key :_type
+            single_collection_parent._default_attributes['_type'] = ::ActiveModel::Attribute.null('_type')
             single_collection_parent = nil
             @single_collection_inherited = false
           end

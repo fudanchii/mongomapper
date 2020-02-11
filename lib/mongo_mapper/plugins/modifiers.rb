@@ -19,7 +19,7 @@ module MongoMapper
         def set(*args)
           criteria, updates, options = criteria_and_keys_from_args(args)
           updates.each do |key, value|
-            updates[key] = keys[key.to_s].set(value) if key?(key)
+            updates[key] = keys[key.to_s].with_value_from_user(value).value if key?(key)
           end
           modifier_update('$set', [criteria, updates, options])
         end
