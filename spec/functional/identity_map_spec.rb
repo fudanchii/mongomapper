@@ -188,7 +188,7 @@ describe "IdentityMap" do
         expect do
           loaded = person_with_time_class.load({'_id' => @id, 'name' => 'Frank', 'created_at' => '2014-12-07T20:36:45.529-08:00'}, true)
           loaded.should be_present
-          loaded.created_at.should be_an_instance_of(Time)
+          loaded.created_at.is_a?(Time).should be_truthy
         end.to_not raise_error
       end
     end
